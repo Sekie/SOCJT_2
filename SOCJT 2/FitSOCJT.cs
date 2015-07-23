@@ -300,6 +300,7 @@ namespace ConsoleApplication1
                     }
                 }
             }
+            file.Append(String.Format("{0,10:0.000}", (Math.Sqrt(FitSOCJT.Comparer(userInput, Masterly.nSoc.finalList, Masterly.nInput.Origin) / userInput.Length))));
             file.AppendLine(" ");
 
             file.AppendLine("Final Parameters for Each Mode:");
