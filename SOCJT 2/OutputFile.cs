@@ -13,6 +13,27 @@ namespace ConsoleApplication1
             List<string> linesToWrite = new List<string>();
             StringBuilder file = new StringBuilder();
             decimal J = 0.5M;
+
+            /* Debugging Things */
+            for (int ii = 0; ii < input.nModes; ii++)
+            {
+                for (int jj = 0; jj < input.nModes; jj++)
+                {
+                    file.Append(input.CrossTermMatrix[ii, jj].ToString() + "\t");
+                }
+                file.Append("\n");
+            }
+            for (int ii = 0; ii < input.nModes; ii++)
+            {
+                for (int jj = 0; jj < input.nModes; jj++)
+                {
+                    file.Append(input.CrossTermFit[ii, jj].ToString() + "\t");
+                }
+                file.Append("\n");
+            }
+            file.AppendLine(" ");
+            /* Debugging Things */
+
             if (input.MinJBool == true)
             {
                 J = input.minJ;

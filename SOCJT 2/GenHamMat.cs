@@ -35,12 +35,17 @@ namespace ConsoleApplication1
         /// <returns>
         /// List of sparsematrix objects corresponding to different parameters.
         /// </returns>
-        public static List<alglib.sparsematrix> GenMatrixHash(List<BasisFunction> basisVectorsByJ, bool isQuad, FileInfo input, out int nColumns, int par, bool diagOnly, int position)
+        public static List<alglib.sparsematrix> GenMatrixHash(List<BasisFunction> basisVectorsByJ, bool isQuad, FileInfo input, out int nColumns, int par, bool diagOnly, int position, out bool checkB, out bool checkC) // Debugging
         {
             int matSize = basisVectorsByJ.Count;
             nColumns = matSize;
             bool bilinear = false;
             int nModes = input.nModes;
+            bool plzworkB = false;
+            bool plzworkC = false;
+
+            checkB = plzworkB;
+            checkC = plzworkC;
 
             //Lists to store the positions of the A and E vecs with cross-terms coupling
             List<int> biAVecPos = new List<int>();
@@ -170,7 +175,7 @@ namespace ConsoleApplication1
                         }
                     }
                 }
-            }//enf if crossTermMatrix == null
+            }//end if crossTermMatrix != null
 
             //initialize the concurrentBags for each matrix being generated. -1 in loop bounds because diagonal already done
             for (int n = 0; n < matList.Count - 1; n++)
@@ -301,6 +306,7 @@ namespace ConsoleApplication1
                     #region Bilinear
                     if (bilinear)
                     {
+                        plzworkB = true;
                         //loop through A and E vecs with possible coupling
                         for (int a = 0; a < biAVecPos.Count; a++)
                         {
@@ -351,7 +357,7 @@ namespace ConsoleApplication1
                                             {
                                                 if (m > n)
                                                 {
-                                                    temp = 0.5 * Math.Sqrt(((double)vlLambda[n, biAVecPos[a]] + oneORnone) * ((double)vlLambda[n, biEVecPos[e]] + ll * pre * vlLambda[n, nModes + biEVecPos[e]] + twoORnone));//ll * (double)vlLambda[n, EVecPos[eModes] + nModes] + 2D))
+                                                    temp = 5; //0.5 * Math.Sqrt(((double)vlLambda[n, biAVecPos[a]] + oneORnone) * ((double)vlLambda[n, biEVecPos[e]] + ll * pre * vlLambda[n, nModes + biEVecPos[e]] + twoORnone));//ll * (double)vlLambda[n, EVecPos[eModes] + nModes] + 2D))
                                                     Tuple<int, int, double> tTemp = new Tuple<int, int, double>(n, m, temp);
                                                     matrixPos[2 * nModes + crossCount].Add(tTemp);
                                                 }
@@ -363,10 +369,11 @@ namespace ConsoleApplication1
                         }//end for loop over a vec positions
                     }//end bilinear if
                     #endregion
-
+                    
                     #region Cross-Quadratic
                     if (crossQuad)
                     {
+                        plzworkC = crossQuad;
                         for (int crossTerm = 0; crossTerm < crossQuadPos.Count; crossTerm += 2)
                         {
                             for (int deltal = -1; deltal < 2; deltal += 2)
@@ -400,9 +407,10 @@ namespace ConsoleApplication1
                                                 {
                                                     if (m > n)
                                                     {
-                                                        temp = LinearMatrixElement(vlLambda, n, crossQuadPos[crossTerm], nModes, deltal, deltaV);
-                                                        temp *= LinearMatrixElement(vlLambda, n, crossQuadPos[crossTerm + 1], nModes, deltal2, deltaV2);
-                                                        temp *= 0.5;
+                                                        temp = 7; // LinearMatrixElement(vlLambda, n, crossQuadPos[crossTerm], nModes, deltal, deltaV);
+                                                        //temp *= LinearMatrixElement(vlLambda, n, crossQuadPos[crossTerm + 1], nModes, deltal2, deltaV2);
+                                                        //temp *= 0.5; // Debugging, the value in the matrix are these elements times C, but C is not multiplying these values, B is, I mean.
+                                                        // Debugging YOYOYO, B multiplies this term. Should be C PROBLEM IDENTIFIED. Now how to fix it....
                                                         Tuple<int, int, double> ttTemp = new Tuple<int, int, double>(n, m, temp);// basisVectorsByJ[n].modesInVec[mode].v     basisVectorsByJ[n].modesInVec[mode].l
                                                         matrixPos[2 * nModes + crossCount].Add(ttTemp);
                                                     }
@@ -415,7 +423,7 @@ namespace ConsoleApplication1
                             crossCount++;
                         }//end loop over cross quadratic terms
                     }
-                    #endregion
+                    #endregion 
                 }//row for loop
             }//end anonymous function in parallel for loop
             );//end parallel for
@@ -430,6 +438,8 @@ namespace ConsoleApplication1
                     alglib.sparseadd(matList[i + 1], spot.Item1, spot.Item2, spot.Item3);
                 }
             }
+            checkB = plzworkB; // Debugging
+            checkC = plzworkC;
             return matList;
         }//end method genMatrix
 
@@ -658,7 +668,7 @@ namespace ConsoleApplication1
                     return;
                 }
             }
-        }//end crossTermInitialization
+        }//end BilinearInitialization
 
         /// <summary>
         /// Reads through a List of JBasisVectors and returns those with a specified j value in a new List.

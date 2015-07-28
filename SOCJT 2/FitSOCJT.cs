@@ -124,7 +124,7 @@ namespace ConsoleApplication1
                             bndU.Add(double.PositiveInfinity);
                             if (j > i)
                             {
-                                lScale.Add(500.0);//scale for bilinear coupling + cross quadratic, changed from 100
+                                lScale.Add(100.0);//scale for bilinear coupling + cross quadratic, changed from 100
                             }
                             if (j == i)
                             {
@@ -133,7 +133,7 @@ namespace ConsoleApplication1
                             else
                             {
                                 lScale.Add(50.0);//scale for cross anharmonic, change from 250
-                            }
+                            } // Debugging: why do these last two terms exist? CrossTermMatrix is upper triangular.
                         }
                     }
                 }
@@ -217,7 +217,7 @@ namespace ConsoleApplication1
             {
                 Console.WriteLine("Calculating eigenvectors.");
                 Masterly.nInput.PrintVector = true;
-                Masterly.nSoc.SOCJTroutine(Masterly.nModes, Masterly.nIsQuad, Masterly.nInputFile, Masterly.nInput,input.useAbsoluteEV);
+                Masterly.nSoc.SOCJTroutine(Masterly.nModes, Masterly.nIsQuad, Masterly.nInputFile, Masterly.nInput, input.useAbsoluteEV);
                 //now assign the lanczosEVectors to those from the SOCJT routine
                 lanczosEVectors = Masterly.nSoc.lanczosEVectors;
                 basisSet = Masterly.nSoc.basisSet;
@@ -265,45 +265,60 @@ namespace ConsoleApplication1
 
             file.AppendLine("A * zeta e = " + Convert.ToString(Masterly.nInput.Azeta));
 
-            /* This is written for data analysis with the NFGSOCJT2 program */
-            /* file.Append("\n" + "NFG_OUTPUT" + "\t");
-            for (int ii = 0; ii < Masterly.nInput.nModes; ii++)
+            /* Debugging */
+
+            for (int ii = 0; ii < xList.Count(); ii++ )
             {
-                double JTSE;
-                if (Masterly.nModes[ii].IsAType == true)
-                {
-                    JTSE = 0.0;
-                }
-                else
-                {
-                    JTSE = Masterly.nModes[ii].D * Masterly.nModes[ii].modeOmega * (Masterly.nModes[ii].K + 1.0);
-                }
-                file.Append(String.Format("{0,7:0.00}", Masterly.nModes[ii].modeOmega) + "\t" + String.Format("{0,4:0.00}", Masterly.nModes[ii].wExe) + "\t" + String.Format("{0,5:0.0000}", Masterly.nModes[ii].D) + "\t" + String.Format("{0,5:0.0000}", Masterly.nModes[ii].K) + "\t" + String.Format("{0,4:0.00}", JTSE) + "\t");
+                file.Append(Convert.ToString(xList[ii]) + "\t");
             }
-            if (input.IncludeCrossTerms == true)
+            file.Append("\n");
+            for (int ii = 0; ii < lScale.Count(); ii++ )
             {
-                for (int i = 0; i < input.nModes; i++)
+                file.Append(Convert.ToString(lScale[ii]) + "\t");
+            }
+            file.Append("\n");
+
+            /*Debugging*/
+
+                /* This is written for data analysis with the NFGSOCJT2 program */
+                /* file.Append("\n" + "NFG_OUTPUT" + "\t");
+                for (int ii = 0; ii < Masterly.nInput.nModes; ii++)
                 {
-                    for (int j = 0; j < input.nModes; j++)
+                    double JTSE;
+                    if (Masterly.nModes[ii].IsAType == true)
                     {
-                        if (input.CrossTermMatrix[i, j] != 0.0 || input.CrossTermFit[i, j] == true)
+                        JTSE = 0.0;
+                    }
+                    else
+                    {
+                        JTSE = Masterly.nModes[ii].D * Masterly.nModes[ii].modeOmega * (Masterly.nModes[ii].K + 1.0);
+                    }
+                    file.Append(String.Format("{0,7:0.00}", Masterly.nModes[ii].modeOmega) + "\t" + String.Format("{0,4:0.00}", Masterly.nModes[ii].wExe) + "\t" + String.Format("{0,5:0.0000}", Masterly.nModes[ii].D) + "\t" + String.Format("{0,5:0.0000}", Masterly.nModes[ii].K) + "\t" + String.Format("{0,4:0.00}", JTSE) + "\t");
+                }
+                if (input.IncludeCrossTerms == true)
+                {
+                    for (int i = 0; i < input.nModes; i++)
+                    {
+                        for (int j = 0; j < input.nModes; j++)
                         {
-                            if (i < j)
+                            if (input.CrossTermMatrix[i, j] != 0.0 || input.CrossTermFit[i, j] == true)
                             {
-                                file.Append(String.Format("{0,10:0.0000}", input.CrossTermMatrix[i, j]) + "\t");
-                            }
-                            else
-                            {
-                                file.Append(String.Format("{0,10:0.00}", input.CrossTermMatrix[i, j]) + "\t");
+                                if (i < j)
+                                {
+                                    file.Append(String.Format("{0,10:0.0000}", input.CrossTermMatrix[i, j]) + "\t");
+                                }
+                                else
+                                {
+                                    file.Append(String.Format("{0,10:0.00}", input.CrossTermMatrix[i, j]) + "\t");
+                                }
                             }
                         }
                     }
                 }
-            }
-            file.Append(String.Format("{0,10:0.000}", (Math.Sqrt(FitSOCJT.Comparer(userInput, Masterly.nSoc.finalList, Masterly.nInput.Origin) / userInput.Length))));
-            file.AppendLine(" "); */
+                file.Append(String.Format("{0,10:0.000}", (Math.Sqrt(FitSOCJT.Comparer(userInput, Masterly.nSoc.finalList, Masterly.nInput.Origin) / userInput.Length))));
+                file.AppendLine(" "); */
 
-            file.AppendLine("Final Parameters for Each Mode:");
+                file.AppendLine("Final Parameters for Each Mode:");
             file.AppendLine("Mode #" + "\t" + "V(min)" + "\t" + "V(max)" + "\t" + "Omega(E)" + "\t" + "wexe" + "\t" + "D" + "\t" + "K" + "\t" + "JTSE" + "\t" + "Omega(A)" + "\t" + "A Type?");
             for (int i = 0; i < Masterly.nInput.nModes; i++)
             {
@@ -439,7 +454,7 @@ namespace ConsoleApplication1
 
             output.AddRange(OutputFile.inputFileMaker(Masterly.nInput, Masterly.nModes));
             return output;
-        }
+        } //end fit
 
         /// <summary>
         /// Function called by MinLM algorithm.

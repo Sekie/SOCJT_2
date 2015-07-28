@@ -11,6 +11,8 @@ namespace ConsoleApplication1
 {
     class SOCJT
     {
+        List<string> linesToWrite = new List<string>();
+
         private static bool matricesMade = false;
 
         //keep this so that on concurrent calls the matrix does not need to be regenerated
@@ -37,6 +39,8 @@ namespace ConsoleApplication1
 
         public List<string> SOCJTroutine(List<ModeInfo> Modes, bool isQuad, string[] inputFile, FileInfo input, bool useAbsolute)
         {
+            bool checkB = false;
+            bool checkC = false; // Debugging
             useAbsolute = input.useAbsoluteEV;
             //Sets minimum and maximum j values.
             Stopwatch measurer = new Stopwatch();
@@ -159,11 +163,11 @@ namespace ConsoleApplication1
                             }
                             if (!matricesMade)//if matrices not made then generate all matrices
                             {
-                                fitHamList[i] = GenHamMat.GenMatrixHash(jBasisVecsByJ[i], isQuad, input, out nColumns, input.ParMatrix, false, i);                                
+                                fitHamList[i] = GenHamMat.GenMatrixHash(jBasisVecsByJ[i], isQuad, input, out nColumns, input.ParMatrix, false, i, out checkB, out checkC); // Debugging                         
                             }
                             else//this makes sure that the diagonal portion is regenerated on each call.
                             {
-                                fitHamList[i][0] = GenHamMat.GenMatrixHash(jBasisVecsByJ[i], isQuad, input, out nColumns, input.ParMatrix, true, i)[0];
+                                fitHamList[i][0] = GenHamMat.GenMatrixHash(jBasisVecsByJ[i], isQuad, input, out nColumns, input.ParMatrix, true, i, out checkB, out checkC)[0]; // Debugging
                             }
                             numcolumnsA[i] = nColumns;
                             if (numcolumnsA[i] < input.M)
@@ -265,11 +269,11 @@ namespace ConsoleApplication1
                         //if matrices aren't made then generate all of them
                         if (!matricesMade)
                         {
-                            fitHamList[i - jBasisVecsByJ.Count / 2] = GenHamMat.GenMatrixHash(quadVecs, isQuad, input, out nColumns, input.ParMatrix, false, i - jBasisVecsByJ.Count / 2);       
+                            fitHamList[i - jBasisVecsByJ.Count / 2] = GenHamMat.GenMatrixHash(quadVecs, isQuad, input, out nColumns, input.ParMatrix, false, i - jBasisVecsByJ.Count / 2, out checkB, out checkC); // debugging       
                         }                        
                         else//If they are made then just generate the diagonal elements.
 	                    {
-                            fitHamList[i - jBasisVecsByJ.Count / 2][0] = GenHamMat.GenMatrixHash(quadVecs, isQuad, input, out nColumns, input.ParMatrix, true, i - jBasisVecsByJ.Count / 2)[0];		 
+                            fitHamList[i - jBasisVecsByJ.Count / 2][0] = GenHamMat.GenMatrixHash(quadVecs, isQuad, input, out nColumns, input.ParMatrix, true, i - jBasisVecsByJ.Count / 2, out checkB, out checkC)[0];	//debugging	 
 	                    }
 
                         jbasisoutA[i - jBasisVecsByJ.Count / 2] = quadVecs;
@@ -324,7 +328,7 @@ namespace ConsoleApplication1
             bool bilinear = false;
             var biAVecPos = new List<int>();
             var biEVecPos = new List<int>();
-            GenHamMat.BilinearInitialization(jBasisVecsByJ[0][0].modesInVec, input.nModes, out bilinear, out biAVecPos, out biEVecPos, input.CrossTermMatrix);
+            GenHamMat.BilinearInitialization(jBasisVecsByJ[0][0].modesInVec, input.nModes, out bilinear, out biAVecPos, out biEVecPos, input.CrossTermMatrix); // Debugging: Where is CrossQuadraticInitialization?
             //code here to convert the alglib matrices to matrices for each j block
 
             
@@ -350,16 +354,19 @@ namespace ConsoleApplication1
                             if (!Modes[count].IsAType)
                             {
                                 val = Math.Sqrt(Modes[count].D) * Modes[count].modeOmega;
+                                linesToWrite.Add("First: " + val.ToString());
                             }
                             else
                             {
                                 //val = Math.Sqrt(Modes[count].D);
                                 val = Modes[count].D;
+                                linesToWrite.Add("Second: " + val.ToString());
                             }
                         }
                         else
                         {
                             val = Modes[count].K * Modes[count].modeOmega;
+                            linesToWrite.Add("Third: " + val.ToString());
                         }
                     }
                     else//means it's a cross term. loop over relevant E and A terms in same order as in genFitMatrix function
@@ -373,26 +380,29 @@ namespace ConsoleApplication1
                                 {
                                     if (input.CrossTermMatrix[row, column] != 0.0)
                                     {
+                                        // Debugging: ISTHISITISTHISITISTHISITISTHISIT
                                         //now test to see if this is a bilinear or cross quadratic term. do bilinear first, then cross quadratic.
                                         //then can get the value
-                                        //use blOrNot to see if we should be doing bilinear or not
+                                        //use blOrNot to see if we should be doing bilinear or not // Debugging: What is this even for?
                                         //if this is a bilinear term, only add it if blOrNot == 0
                                         //crossMatrixCounter will keep going 
-                                        if ((biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 0)
+                                        /*if ((biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 0)
                                         { 
                                             //means this is a bilinear term                                            
                                             if (crossMatrixCounter == whichCrossMatrix)
                                             {
                                                 val = input.CrossTermMatrix[row, column];
+                                                linesToWrite.Add("Bilinear: " + val.ToString());
                                             }//end conditional to see if this is the cross-term element we want    
                                             crossMatrixCounter++;
-                                        }
+                                        }*/
                                         if (!(biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 1)
                                         {
                                             //means this is a cross-quadratic term
                                             if (crossMatrixCounter == whichCrossMatrix)
                                             {
                                                 val = input.CrossTermMatrix[row, column];
+                                                linesToWrite.Add("Crosscoupling: " + val.ToString());
                                             }//end conditional to see if this is the cross-term element we want  
                                             crossMatrixCounter++; 
                                         }
@@ -405,6 +415,9 @@ namespace ConsoleApplication1
                     mat[i].Add(cTimesSparse(fitHamList[i][j], val));
                 }//end loop over fitHamList
             }
+
+            linesToWrite.Add("Bool for B: " + checkB.ToString());
+            linesToWrite.Add("Bool for C: " + checkC.ToString());
             //now need to convert the lists of matrices in each mat element into a single object
             //here convert the alglib matrices to the appropriate things.
             for (int i = 0; i < array1.Length; i++)
@@ -664,9 +677,9 @@ namespace ConsoleApplication1
                 }
             }
 
-            List<string> linesToWrite = new List<string>();
+            
             finalList = setAndSortEVs(eigenvalues, input.S, input.IncludeSO, zMatrices, JvecsForOutuput, input, overlaps, input.useAbsoluteEV);//add the eigenvectors so that the symmetry can be included as well
-            linesToWrite = OutputFile.makeOutput(input, zMatrices, array1, JvecsForOutuput, eigenvalues, isQuad, finalList, IECODE, ITER);                
+            linesToWrite.AddRange(OutputFile.makeOutput(input, zMatrices, array1, JvecsForOutuput, eigenvalues, isQuad, finalList, IECODE, ITER));                
             outp = linesToWrite;                
             return linesToWrite;   
         }//end SOCJT Routine
@@ -1397,11 +1410,11 @@ namespace ConsoleApplication1
         /// <returns>
         /// Sparesmatrix containing the original matrix A times the double val.
         /// </returns>
-        private static alglib.sparsematrix cTimesSparse(alglib.sparsematrix A, double val)
+        private static alglib.sparsematrix cTimesSparse(alglib.sparsematrix A, double val) 
         {
             int i;
             int j;
-            double oldVal;
+            double oldVal; // Debugging -- IT MUST BE SOMETHING HERE
             int t0 = 0;
             int t1 = 0;
             alglib.sparsematrix B = new alglib.sparsematrix();
