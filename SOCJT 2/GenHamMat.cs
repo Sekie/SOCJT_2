@@ -302,7 +302,7 @@ namespace ConsoleApplication1
                         #endregion
                     }//end loop over E-modes
 
-                    int crossCount = 0;
+                    int crossCount = 0; // Debugging: what's this for? why isn't it reinitialized for the cross term matrix
                     #region Bilinear
                     if (bilinear)
                     {
@@ -373,6 +373,7 @@ namespace ConsoleApplication1
                     #region Cross-Quadratic
                     if (crossQuad)
                     {
+                        crossCount++;
                         plzworkC = crossQuad;
                         for (int crossTerm = 0; crossTerm < crossQuadPos.Count; crossTerm += 2)
                         {
@@ -420,7 +421,7 @@ namespace ConsoleApplication1
                                     }//end loop over linear l values
                                 }//end loop over deltaV
                             }//end loop over linear l values
-                            crossCount++;
+                           // crossCount++; // should this move up?
                         }//end loop over cross quadratic terms
                     }
                     #endregion 

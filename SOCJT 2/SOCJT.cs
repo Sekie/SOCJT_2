@@ -368,6 +368,7 @@ namespace ConsoleApplication1
                             val = Modes[count].K * Modes[count].modeOmega;
                             linesToWrite.Add("Third: " + val.ToString());
                         }
+                        mat[i].Add(cTimesSparse(fitHamList[i][j], val)); // Debugging
                     }
                     else//means it's a cross term. loop over relevant E and A terms in same order as in genFitMatrix function
                     {
@@ -386,16 +387,17 @@ namespace ConsoleApplication1
                                         //use blOrNot to see if we should be doing bilinear or not // Debugging: What is this even for?
                                         //if this is a bilinear term, only add it if blOrNot == 0
                                         //crossMatrixCounter will keep going 
-                                        /*if ((biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 0)
+                                        if ((biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 0)
                                         { 
                                             //means this is a bilinear term                                            
                                             if (crossMatrixCounter == whichCrossMatrix)
                                             {
                                                 val = input.CrossTermMatrix[row, column];
                                                 linesToWrite.Add("Bilinear: " + val.ToString());
+                                                mat[i].Add(cTimesSparse(fitHamList[i][j], val)); // Debugging
                                             }//end conditional to see if this is the cross-term element we want    
                                             crossMatrixCounter++;
-                                        }*/
+                                        }
                                         if (!(biAVecPos.Exists(x => x == row) || biAVecPos.Exists(x => x == column)) && blOrNot == 1)
                                         {
                                             //means this is a cross-quadratic term
@@ -403,6 +405,7 @@ namespace ConsoleApplication1
                                             {
                                                 val = input.CrossTermMatrix[row, column];
                                                 linesToWrite.Add("Crosscoupling: " + val.ToString());
+                                                mat[i].Add(cTimesSparse(fitHamList[i][j], val)); // Debugging
                                             }//end conditional to see if this is the cross-term element we want  
                                             crossMatrixCounter++; 
                                         }
@@ -412,7 +415,7 @@ namespace ConsoleApplication1
                         }//end loop to go through the cross-term matrix twice
                         whichCrossMatrix++;
                     }//end else for counting if it's D / K or cross-Term                    
-                    mat[i].Add(cTimesSparse(fitHamList[i][j], val));
+                    //mat[i].Add(cTimesSparse(fitHamList[i][j], val));
                 }//end loop over fitHamList
             }
 
