@@ -524,6 +524,11 @@ namespace ConsoleApplication1
         /// </summary>
         public string SeedFile { get; private set; }
 
+        /// <summary>
+        /// Bool used to calculate the matrix and eigenvalues of the Hessian
+        /// </summary>
+        public bool calcHessian { get; private set; }
+
         #endregion properties
 
         /// <summary>
@@ -551,6 +556,7 @@ namespace ConsoleApplication1
             useAbsoluteEV = false;
             useNFG = false;
             useSeed = false;
+            calcHessian = false;
 
 
             MatrixFile = "matrix.txt";
@@ -753,6 +759,11 @@ namespace ConsoleApplication1
                             {
                                 EigenvectorCoefficientMinimum = -1.0 * EigenvectorCoefficientMinimum;
                             }
+                            continue;
+                        }
+                        if (inputf[u].ToUpper() == "HESSIAN_MAT")
+                        {
+                            calcHessian = TorF(inputf[u + 1]);
                             continue;
                         }
                         if (inputf[u] == "/")

@@ -172,8 +172,19 @@ namespace ConsoleApplication1
             int maxits = input.MaxOptimizerSteps;
             alglib.minlmstate state;
             alglib.minlmreport rep;
+            //alglib.ndimensional_func func;
+            //alglib.ndimensional_grad gradient;
+            //alglib.ndimensional_hess hessian;
 
             alglib.minlmcreatev(userInput.Length, xVec, input.Factor, out state);
+            //if (input.calcHessian)
+            //{
+            //    state.needfgh = true;
+            //    //alglib.ndimensional_func func;
+            //    //alglib.ndimensional_grad grad;
+            //    //alglib.ndimensional_hess HessianMat;
+            //    //alglib.minlmoptimize(state, function, null, null, state.repnhess, Masterly);
+            //}
             alglib.minlmsetbc(state, lowBound, upBound);
             alglib.minlmsetscale(state, scale);
             alglib.minlmsetcond(state, epsg, epsf, epsx, maxits);
@@ -181,6 +192,10 @@ namespace ConsoleApplication1
             //acc = 1, meaning it's on by default.  Just leave that.
             //alglib.minlmsetacctype(state, 0);
 
+            //if (input.calcHessian)
+            //{
+            //    alglib.minlmoptimize(state, func, gradient, hessian, null, Masterly);
+            //}
             alglib.minlmoptimize(state, function, null, Masterly);
             alglib.minlmresults(state, out xVec, out rep);
             int report = rep.terminationtype;
@@ -307,6 +322,23 @@ namespace ConsoleApplication1
                     file.Append(String.Format("{0,10:0.0000}", Math.Sqrt(resultM[ll, ll])) + "\t");
                 }
                 file.Append(String.Format("{0,10:0.000}", (Math.Sqrt(FitSOCJT.Comparer(userInput, Masterly.nSoc.finalList, Masterly.nInput.Origin) / userInput.Length))));
+
+                file.Append("\n" + "ELEVEL");
+                for (int ii = 0; ii < Masterly.nSoc.finalList.Length; ii++)
+                {
+                    if (Masterly.nSoc.finalList[ii].JBlock == 0.5M)
+                    {
+                        file.Append("\t" + String.Format("{0,9:0.0000}", Masterly.nSoc.finalList[ii].Evalue));
+                    }
+                }
+                file.Append("\n" + "ALEVEL");
+                for (int ii = 0; ii < Masterly.nSoc.finalList.Length; ii++)
+                {
+                    if (Masterly.nSoc.finalList[ii].JBlock == 1.5M)
+                    {
+                        file.Append("\t" + String.Format("{0,9:0.0000}", Masterly.nSoc.finalList[ii].Evalue));
+                    }
+                }
                 file.AppendLine("\n");
             } // end if useNFG == true
 
