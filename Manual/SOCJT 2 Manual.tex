@@ -1199,7 +1199,7 @@ calculation are summarized.
  
 SOCJT 2 has completed. Total time elapsed =      5.9420 seconds.
 \end{verbatim}
-The column for {\tt Symm} will only be included if either the Block Lanczos (Underwood) routine is used or the {\tt PRINT\_VEC} flag is set to {\tt TRUE}. In this final listing the eigenvalues have been adjusted so that the lowest energy eigenvalue is set to 0 plus the value of {\tt ORIGIN}. The last line is the total time elapsed. This may be slightly more than the sum of the times for the Hamiltonian generation and Lanczos routine because of time spent generating the basis set and parsing the input/output files.
+The column for {\tt Symm} will only be included if either the Block Lanczos (Underwood) routine is used or the {\tt PRINT\_VEC} flag is set to {\tt TRUE} or \texttt{SEED} is set to \texttt{TRUE}. If \texttt{SEED} is set to \texttt{TRUE}, the levels will be labeled between A1, A2, and E symmetries. If any of the other two options are used, the levels will be labeled by 1 (indicating A1) or 2 (indicating A2 or E). In this final listing the eigenvalues have been adjusted so that the lowest energy eigenvalue is set to 0 plus the value of {\tt ORIGIN}. The last line is the total time elapsed. This may be slightly more than the sum of the times for the Hamiltonian generation and Lanczos routine because of time spent generating the basis set and parsing the input/output files.
 
 \subsection{Fitting output}
 
@@ -1367,27 +1367,29 @@ reference \citen{A-bar-e001} for more details of \ai\ calculations of the
 
 \subsubsection{The format of fitfile} \label{section:fitting:file}
 
-An additional file, named {\tt FITFILE}, is required if a fit is being run and must be ins the same director as the input file. It contains a list
+An additional file, named {\tt FITFILE}, is required if a fit is being run and must be in the same director as the input file. It contains a list
 of the eigenvalues and quantum number assignments of the energy levels to
 be fit. These energies are all relative to the ``vibrationless''
 energy level being defined as the value of the {\tt ORIGIN} parameter in the input file (usually 0). This file is of the format 
 \begin{verbatim}
 11
-    7.96   0.5  1  0.5
-  155.30   1.5  1 -0.5
+    7.96   0.5  1  0.5	T
+  155.30   1.5  1 -0.5	F
 .
 .
 .
-  496.59   0.5  4  0.5
-  499.06   0.5  4 -0.5  
+  496.59   0.5  4  0.5	F
+  499.06   0.5  4 -0.5	T
 \end{verbatim}
 The first line of the file contains the number of energy levels to be
 fit, in this case 11.  There are then that many lines following with
-the energy, $j$ value, $n_j$, and the value of $\Sigma $.  There are not formatting guidelines beyond the fact that the parameters must be in this order and have appropriate values (half integer for $j$ and $\Sigma$, integer for $n_j$).
+the energy, $j$ value, $n_j$, value of $\Sigma $, and symmetry value. There are not formatting guidelines beyond the fact that the parameters must be in this order and have appropriate values (half integer for $j$ and $\Sigma$, integer for $n_j$, boolean for symmetry).
 
-The three ``quantum numbers'' $j$,
-$n_j$, and $\Sigma $ define each unique energy level, and can be found
-at the end of the output of a \socjttwo\ run.
+The four ``quantum numbers'' $j$,
+$n_j$, $\Sigma$, and symmetry define each unique energy level, and can be found
+at the end of the output of a \socjttwo\ run. 
+
+The symmetry of each level designates whether the level is totally symmetric or not. It is given a value of \texttt{TRUE} if the eigenvalue belongs to an $a_1$ representation, and \texttt{FALSE} otherwise. These assignments are only important if \texttt{SEED} is set to \texttt{TRUE} in the input. Otherwise, the symmetry assignment is not used.
 
 \subsection{The Seed Vector}
 

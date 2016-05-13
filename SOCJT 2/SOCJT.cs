@@ -483,31 +483,17 @@ namespace ConsoleApplication1
             // The Lanczos routine is parallelized by j, and the routine takes the list at [j] to implement the seed vector. Empty list will indicate that no seed is being used.
             var SeedPositionsByJ = new List<int>[GenHamMat.basisPositions.Count];
             var SeedCoefficientsByJ = new List<double>[GenHamMat.basisPositions.Count];
-            var SeedPositionsByJ2 = new List<int>[GenHamMat.basisPositions.Count];
-            var SeedCoefficientsByJ2 = new List<double>[GenHamMat.basisPositions.Count];
             var isAbyJ = new List<bool>[GenHamMat.basisPositions.Count]; // Array of Lists where the first index is Floor(j) and the second index are booleans indicating A1 (T) or Not A1 (F)
             for (int i = 0; i < GenHamMat.basisPositions.Count; i++)
             {
                 SeedPositionsByJ[i] = new List<int>(); // Initialize seed position list for each j
                 SeedCoefficientsByJ[i] = new List<double>();
-                SeedPositionsByJ2[i] = new List<int>();
-                SeedCoefficientsByJ2[i] = new List<double>();
                 isAbyJ[i] = new List<bool>();
             }
             if (input.useSeed)
             {
                 SeedPositionsByJ = GenerateSeedPositions(input.SeedFile, input.nModes, isQuad, ref SeedCoefficientsByJ);
-                if (input.SeedFile2 != "")
-                {
-                    SeedPositionsByJ2 = GenerateSeedPositions(input.SeedFile2, input.nModes, isQuad, ref SeedCoefficientsByJ2);
-                }
             }
-            var SeedPositionsA1A2 = new List<List<int>[]>();
-            var SeedCoefficientsA1A2 = new List<List<double>[]>();
-            SeedPositionsA1A2.Add(SeedPositionsByJ);
-            SeedPositionsA1A2.Add(SeedPositionsByJ2);
-            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ);
-            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ2);
             #endregion
 
             #region Lanczos
@@ -526,19 +512,13 @@ namespace ConsoleApplication1
                 }
             }
             ParallelOptions options2 = new ParallelOptions();
-            ParallelOptions seed2options = new ParallelOptions(); //If a second seed is being used.
             options2.MaxDegreeOfParallelism = input.ParJ;
-            seed2options.MaxDegreeOfParallelism = 2;
             try
             {
                 Parallel.For(0, array1.Length, options2, i =>//changed to array1.count from sHamMatrix.count
                 {
                     double[] evs;
-                    double[] evs1;
-                    double[] evs2;
                     double[,] temp;
-                    double[,] temp1;
-                    double[,] temp2;
                     IECODE[i] = -1;
 
                     //add a parameter to count Lanczos iterations to set possible stopping criteria that way
@@ -548,31 +528,7 @@ namespace ConsoleApplication1
                         ITER[i] = input.NumberOfIts;
                         evs = new double[input.M + 1];
                         temp = new double[numcolumnsA[i], input.M + 1];
-                        //if (input.SeedFile2 == "")
-                        //{
-                            Lanczos.NaiveLanczos(ref evs, ref temp, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
-                        //}
-                        //else
-                        //{
-                        //    evs1 = new double[input.M + 1];
-                        //    evs2 = new double[input.M + 1];
-                        //    temp1 = new double[numcolumnsA[i], input.M + 1];
-                        //    temp2 = new double[numcolumnsA[i], input.M + 1];
-                        //    Parallel.For(0, 2, seed2options, ii =>
-                        //    {   
-                        //        if (ii == 0)
-                        //        {
-                        //            Lanczos.NaiveLanczos(ref evs1, ref temp1, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
-                        //        }
-                        //        if (ii == 1)
-                        //        {
-                        //            Lanczos.NaiveLanczos(ref evs2, ref temp2, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ2[i], SeedCoefficientsByJ2[i], i, input.FilePath);
-                        //        }
-                        //    }
-                        //    );
-                        //    evs = new double[evs1.Length + evs2.Length];
-                        //    isAbyJ[i].Clear();
-                        //}
+                        Lanczos.NaiveLanczos(ref evs, ref temp, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
                     }
                     else//means use block Lanczos from SOCJT
                     {
@@ -585,7 +541,7 @@ namespace ConsoleApplication1
                     //initialize eigenvalues to have a length.                    
                     eigenvalues[i] = new double[evs.Length - 1];
                     for (int j = 0; j < evs.Length - 1; j++)
-                    {
+                    { 
                         eigenvalues[i][j] = evs[j];
                     }
                     //I think this should be only for if block lanczos or naive lanczos with already calculated eigenvectors
@@ -600,6 +556,7 @@ namespace ConsoleApplication1
                             }
                         }
                     }
+
                     //here if evectors are needed and hamiltonian is too large assign the lanczosEVectors to the 
                     if (!input.BlockLanczos && array1[0].innerobj.m >= Lanczos.basisSetLimit && input.PrintVector)
                     {

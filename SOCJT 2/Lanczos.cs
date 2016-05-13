@@ -784,6 +784,9 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="SeedVectorPositions">
         /// List of positions in starting vector to be non zero for this specific j
         /// </param>
+        /// /// <param name="useTwoSeeds">
+        /// Indicates if two seeds are being used. If two are being used, then zero overlap vectors are thrown out.
+        /// </param>
         public static void NaiveLanczos(ref double[] evs, ref double[,] z, ref List<bool> isAList, alglib.sparsematrix A, int its, double tol, bool evsNeeded, List<int> SeedVectorPositions, List<double> SeedVectorCoefficients, int n, string file)
         {
             int N = A.innerobj.m;
@@ -989,12 +992,19 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                                 if (Math.Abs(z[0, i]) > seedtol) // This is the dot product of the seed vector with this lanczos eigenvector, toss if zero
                                 {
                                     correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                    isAList.Add(true); // a1
                                     // continue;
+                                }
+                                else
+                                {
+                                    correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                    isAList.Add(false); // a2
                                 }
                             }
                             else
                             {
                                 correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                isAList.Add(false); // e
                                 //continue;
                             }
                             continue;

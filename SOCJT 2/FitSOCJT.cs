@@ -338,10 +338,18 @@ namespace ConsoleApplication1
                         file.Append("\t" + String.Format("{0,9:0.0000}", Masterly.nSoc.finalList[ii].Evalue));
                     }
                 }
-                file.Append("\n" + "ALEVEL");
+                file.Append("\n" + "A1LEVEL");
                 for (int ii = 0; ii < Masterly.nSoc.finalList.Length; ii++)
                 {
-                    if (Masterly.nSoc.finalList[ii].JBlock == 1.5M)
+                    if (Masterly.nSoc.finalList[ii].JBlock == 1.5M && Masterly.nSoc.finalList[ii].IsA1 == true)
+                    {
+                        file.Append("\t" + String.Format("{0,9:0.0000}", Masterly.nSoc.finalList[ii].Evalue));
+                    }
+                }
+                file.Append("\n" + "A2LEVEL");
+                for (int ii = 0; ii < Masterly.nSoc.finalList.Length; ii++)
+                {
+                    if (Masterly.nSoc.finalList[ii].JBlock == 1.5M && Masterly.nSoc.finalList[ii].IsA1 == false)
                     {
                         file.Append("\t" + String.Format("{0,9:0.0000}", Masterly.nSoc.finalList[ii].Evalue));
                     }
@@ -655,9 +663,12 @@ namespace ConsoleApplication1
                     {
                         if (exp[i].Number == socjtOut[j].Number)
                         {
-                            RMS += Math.Pow((exp[i].Evalue + origin) - socjtOut[j].Evalue, 2D);
-                            //h = j;
-                            break;
+                            if (exp[i].IsA1 == socjtOut[j].IsA1)
+                            {
+                                RMS += Math.Pow((exp[i].Evalue + origin) - socjtOut[j].Evalue, 2D);
+                                //h = j;
+                                break;
+                            }
                         }
                     }
                 }
