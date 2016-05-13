@@ -483,15 +483,31 @@ namespace ConsoleApplication1
             // The Lanczos routine is parallelized by j, and the routine takes the list at [j] to implement the seed vector. Empty list will indicate that no seed is being used.
             var SeedPositionsByJ = new List<int>[GenHamMat.basisPositions.Count];
             var SeedCoefficientsByJ = new List<double>[GenHamMat.basisPositions.Count];
+            var SeedPositionsByJ2 = new List<int>[GenHamMat.basisPositions.Count];
+            var SeedCoefficientsByJ2 = new List<double>[GenHamMat.basisPositions.Count];
+            var isAbyJ = new List<bool>[GenHamMat.basisPositions.Count]; // Array of Lists where the first index is Floor(j) and the second index are booleans indicating A1 (T) or Not A1 (F)
             for (int i = 0; i < GenHamMat.basisPositions.Count; i++)
             {
                 SeedPositionsByJ[i] = new List<int>(); // Initialize seed position list for each j
                 SeedCoefficientsByJ[i] = new List<double>();
+                SeedPositionsByJ2[i] = new List<int>();
+                SeedCoefficientsByJ2[i] = new List<double>();
+                isAbyJ[i] = new List<bool>();
             }
             if (input.useSeed)
             {
                 SeedPositionsByJ = GenerateSeedPositions(input.SeedFile, input.nModes, isQuad, ref SeedCoefficientsByJ);
+                if (input.SeedFile2 != "")
+                {
+                    SeedPositionsByJ2 = GenerateSeedPositions(input.SeedFile2, input.nModes, isQuad, ref SeedCoefficientsByJ2);
+                }
             }
+            var SeedPositionsA1A2 = new List<List<int>[]>();
+            var SeedCoefficientsA1A2 = new List<List<double>[]>();
+            SeedPositionsA1A2.Add(SeedPositionsByJ);
+            SeedPositionsA1A2.Add(SeedPositionsByJ2);
+            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ);
+            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ2);
             #endregion
 
             #region Lanczos
@@ -510,13 +526,19 @@ namespace ConsoleApplication1
                 }
             }
             ParallelOptions options2 = new ParallelOptions();
+            ParallelOptions seed2options = new ParallelOptions(); //If a second seed is being used.
             options2.MaxDegreeOfParallelism = input.ParJ;
+            seed2options.MaxDegreeOfParallelism = 2;
             try
             {
                 Parallel.For(0, array1.Length, options2, i =>//changed to array1.count from sHamMatrix.count
                 {
                     double[] evs;
+                    double[] evs1;
+                    double[] evs2;
                     double[,] temp;
+                    double[,] temp1;
+                    double[,] temp2;
                     IECODE[i] = -1;
 
                     //add a parameter to count Lanczos iterations to set possible stopping criteria that way
@@ -526,7 +548,31 @@ namespace ConsoleApplication1
                         ITER[i] = input.NumberOfIts;
                         evs = new double[input.M + 1];
                         temp = new double[numcolumnsA[i], input.M + 1];
-                        Lanczos.NaiveLanczos(ref evs, ref temp, array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
+                        //if (input.SeedFile2 == "")
+                        //{
+                            Lanczos.NaiveLanczos(ref evs, ref temp, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
+                        //}
+                        //else
+                        //{
+                        //    evs1 = new double[input.M + 1];
+                        //    evs2 = new double[input.M + 1];
+                        //    temp1 = new double[numcolumnsA[i], input.M + 1];
+                        //    temp2 = new double[numcolumnsA[i], input.M + 1];
+                        //    Parallel.For(0, 2, seed2options, ii =>
+                        //    {   
+                        //        if (ii == 0)
+                        //        {
+                        //            Lanczos.NaiveLanczos(ref evs1, ref temp1, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath);
+                        //        }
+                        //        if (ii == 1)
+                        //        {
+                        //            Lanczos.NaiveLanczos(ref evs2, ref temp2, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ2[i], SeedCoefficientsByJ2[i], i, input.FilePath);
+                        //        }
+                        //    }
+                        //    );
+                        //    evs = new double[evs1.Length + evs2.Length];
+                        //    isAbyJ[i].Clear();
+                        //}
                     }
                     else//means use block Lanczos from SOCJT
                     {
@@ -680,7 +726,7 @@ namespace ConsoleApplication1
             }
 
             List<string> linesToWrite = new List<string>();
-            finalList = setAndSortEVs(eigenvalues, input.S, input.IncludeSO, zMatrices, JvecsForOutuput, input, overlaps);//add the eigenvectors so that the symmetry can be included as well
+            finalList = setAndSortEVs(eigenvalues, isAbyJ, input.S, input.IncludeSO, zMatrices, JvecsForOutuput, input, overlaps);//add the eigenvectors so that the symmetry can be included as well
             linesToWrite = OutputFile.makeOutput(input, zMatrices, array1, JvecsForOutuput, eigenvalues, isQuad, finalList, IECODE, ITER);
             outp = linesToWrite;
             return linesToWrite;
@@ -1210,6 +1256,9 @@ namespace ConsoleApplication1
         /// <param name="evs">
         /// Eigenvalues for all j blocks
         /// </param>
+        /// <param name="isAbyJ">
+        /// Array of lists. First index is Floor(j). Second index is the number eigenvalue with that j. True is A1. False is A2 or E.
+        /// </param>
         /// <param name="S">
         /// Spin
         /// </param>
@@ -1228,7 +1277,7 @@ namespace ConsoleApplication1
         /// <returns>
         /// Eigenvalue array with eigenvalue objects all initialized and sorted by value.
         /// </returns>
-        public static Eigenvalue[] setAndSortEVs(List<double[]> evs, decimal S, bool inclSO, List<double[,]> zMatrices, List<List<BasisFunction>> jvecs, FileInfo input, List<double[]> overlap)
+        public static Eigenvalue[] setAndSortEVs(List<double[]> evs, List<bool>[] isAbyJ, decimal S, bool inclSO, List<double[,]> zMatrices, List<List<BasisFunction>> jvecs, FileInfo input, List<double[]> overlap)
         {
             List<Eigenvalue> eigen = new List<Eigenvalue>();
             int counter = 0;
@@ -1240,19 +1289,44 @@ namespace ConsoleApplication1
             {
                 maxS = maxS * -1M;
             }
-            for (int i = 0; i < evs.Count; i++)
+            for (int i = 0; i < evs.Count; i++) // Loop over j
             {
-                for (int j = 0; j < evs[i].Length; j++)
+                int countA1 = 0; // We will need to find n_j for each eigenvalue. This is used to have a different set of n_j for a1 versus a2.
+                for (int j = 0; j < evs[i].Length; j++) // Loop over EV with same j
                 {
                     //add call to symmetry checker function here.
-                    bool tbool = isA(jvecs[i], zMatrices[i], j, input, false);
+                    bool tbool;
+                    if (j + 1 <= isAbyJ[i].Count)
+                    {
+                        tbool = isAbyJ[i][j]; // isA(jvecs[i], zMatrices[i], j, input, false); // New symmetry checker using seed vector
+                    }
+                    else // not enough eigenvalues calculated, probably won't assign anyways.
+                    {
+                        tbool = false;
+                    }
                     if (input.Intensity && input.PrintVector)
                     {
-                        eigen.Add(new Eigenvalue(J, j + 1, tempS, evs[i][j], tbool, overlap[i][j]));
+                        if (tbool) // means a1
+                        {
+                            countA1++;
+                            eigen.Add(new Eigenvalue(J, countA1, tempS, evs[i][j], tbool, overlap[i][j]));
+                        }
+                        else // means a2 or e
+                        {
+                            eigen.Add(new Eigenvalue(J, j + 1 - countA1, tempS, evs[i][j], tbool, overlap[i][j]));
+                        }
                     }
                     else
                     {
-                        eigen.Add(new Eigenvalue(J, j + 1, tempS, evs[i][j], tbool));
+                        if (tbool) // means a1
+                        {
+                            countA1++;
+                            eigen.Add(new Eigenvalue(J, countA1, tempS, evs[i][j], tbool));
+                        }
+                        else // means a2 or e
+                        {
+                            eigen.Add(new Eigenvalue(J, j + 1 - countA1, tempS, evs[i][j], tbool));
+                        }
                     }
                 }
                 if (tempS < maxS && (J - 1.5M) % 3M != 0M)

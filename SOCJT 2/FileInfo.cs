@@ -525,6 +525,11 @@ namespace ConsoleApplication1
         public string SeedFile { get; private set; }
 
         /// <summary>
+        /// String that contains the file path for the second seed vector
+        /// </summary>
+        public string SeedFile2 { get; private set; }
+
+        /// <summary>
         /// Bool used to calculate the matrix and eigenvalues of the Hessian
         /// </summary>
         public bool calcHessian { get; private set; }
@@ -558,12 +563,13 @@ namespace ConsoleApplication1
             useSeed = false;
             calcHessian = false;
 
-
             MatrixFile = "matrix.txt";
             Title = "TITLE";
             FitFile = "fit.fit";
             VectorName = "vector.txt";
             SeedFile = "seed.txt";
+            SeedFile2 = ""; // Intended to store a2 seed.
+            
 
             //these are reasonable values of J for a basic quadratic problem
             maxJ = 7.5M;
@@ -840,9 +846,14 @@ namespace ConsoleApplication1
                             useSeed = TorF(inputf[u + 1]);
                             continue;
                         }
-                        if (inputf[u].ToUpper() == "SEEDFILE")
+                        if (inputf[u].ToUpper() == "SEEDFILE1")
                         {
                             SeedFile = inputf[u + 1];
+                            continue;
+                        }
+                        if (inputf[u].ToUpper() == "SEEDFILE2")
+                        {
+                            SeedFile2 = inputf[u + 1];
                             continue;
                         }
                         if (inputf[u] == "/")

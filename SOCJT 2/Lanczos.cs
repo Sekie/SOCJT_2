@@ -784,7 +784,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="SeedVectorPositions">
         /// List of positions in starting vector to be non zero for this specific j
         /// </param>
-        public static void NaiveLanczos(ref double[] evs, ref double[,] z, alglib.sparsematrix A, int its, double tol, bool evsNeeded, List<int> SeedVectorPositions, List<double> SeedVectorCoefficients, int n, string file)
+        public static void NaiveLanczos(ref double[] evs, ref double[,] z, ref List<bool> isAList, alglib.sparsematrix A, int its, double tol, bool evsNeeded, List<int> SeedVectorPositions, List<double> SeedVectorCoefficients, int n, string file)
         {
             int N = A.innerobj.m;
             int M = evs.Length;
@@ -836,7 +836,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                 tBetas[i] = betas[i + 2];
             }
             //Diagonalize Lanczos Matrix to find M correct eigenvalues
-            LanczosMatrixDiagonalization(ref evs, ref z, tol, M, alphas, nBetas, tAlphas, tBetas, evsNeeded, useSeed);
+            LanczosMatrixDiagonalization(ref evs, ref z, ref isAList, tol, M, alphas, nBetas, tAlphas, tBetas, evsNeeded, useSeed);
             //if needed, build array of eigenvectors to return
             if (evsNeeded)
             {
@@ -906,7 +906,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="correctEvs">
         /// Tuple to store the positions of the correct eigenvalues so that the correct eigenvectors may be extracted.
         /// </param>
-        private static void LanczosMatrixDiagonalization(ref double[] evs, ref double[,] z, double tol, int M, double[] alphas, double[] nBetas, double[] tAlphas, double[] tBetas, bool evsNeeded, bool useSeed)
+        private static void LanczosMatrixDiagonalization(ref double[] evs, ref double[,] z, ref List<bool> isAList, double tol, int M, double[] alphas, double[] nBetas, double[] tAlphas, double[] tBetas, bool evsNeeded, bool useSeed)
         {
             //dummy matrix for diagonalization of T^2
             var ZZ = new double[0, 0];
@@ -1008,12 +1008,19 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                             {
                                 correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
                                 //i += repeater - 1;
+                                isAList.Add(true);
+                            }
+                            else // Remove this else if you want to remove a2 eigenvalues completely
+                            {
+                                correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                isAList.Add(false);
                             }
                         }
                         else
                         {
                             correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
                             //i += repeater - 1;
+                            isAList.Add(false); // I think this would mean e block, so the label should be F.
                         }
                         i += repeater - 1;
                     }

@@ -41,7 +41,14 @@ namespace ConsoleApplication1
             //initialize the Eigenvalue array for the fit values from the fit file
             for (int i = 0; i < nToFit; i++)
             {
-                userInput[i] = new Eigenvalue(Convert.ToDecimal(fitF[i * 4 + 2]), Convert.ToInt16(fitF[i * 4 + 3]), Convert.ToDecimal(fitF[i * 4 + 4]), Convert.ToDouble(fitF[i * 4 + 1]), false);
+                if (input.useSeed)
+                {
+                    userInput[i] = new Eigenvalue(Convert.ToDecimal(fitF[i * 5 + 2]), Convert.ToInt16(fitF[i * 5 + 3]), Convert.ToDecimal(fitF[i * 5 + 4]), Convert.ToDouble(fitF[i * 5 + 1]), FileInfo.TorF(fitF[i * 5 + 5]));
+                }
+                else // if the seed switch is off, all Lanczos eigenvalues will be labelled as not A1, so we will label all fit file values as not A1
+                {
+                    userInput[i] = new Eigenvalue(Convert.ToDecimal(fitF[i * 5 + 2]), Convert.ToInt16(fitF[i * 5 + 3]), Convert.ToDecimal(fitF[i * 5 + 4]), Convert.ToDouble(fitF[i * 5 + 1]), false);
+                }
             }
 
             //initializes the X vector, boundary conditions and variable scales
@@ -599,15 +606,18 @@ namespace ConsoleApplication1
                         {
                             if (exp[i].Sigma == socjtOut[j].Sigma)
                             {
-                                if (raw == false)
+                                if (exp[i].IsA1 == socjtOut[j].IsA1) // Added the symmetry conditions
                                 {
-                                    errors.Add(Math.Pow((exp[i].Evalue + origin) - socjtOut[j].Evalue, 2D));//took out ZPE
-                                    break;
-                                }
-                                if (raw == true)
-                                {
-                                    errors.Add((exp[i].Evalue + origin) - socjtOut[j].Evalue);//took out ZPE
-                                    break;
+                                    if (raw == false)
+                                    {
+                                        errors.Add(Math.Pow((exp[i].Evalue + origin) - socjtOut[j].Evalue, 2D));//took out ZPE
+                                        break;
+                                    }
+                                    if (raw == true)
+                                    {
+                                        errors.Add((exp[i].Evalue + origin) - socjtOut[j].Evalue);//took out ZPE
+                                        break;
+                                    }
                                 }
                             }
                         }
