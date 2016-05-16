@@ -525,6 +525,11 @@ namespace ConsoleApplication1
         public string SeedFile { get; private set; }
 
         /// <summary>
+        /// String that contains the file path for the second seed vector
+        /// </summary>
+        public string SeedFile2 { get; private set; }
+
+        /// <summary>
         /// Bool used to calculate the matrix and eigenvalues of the Hessian
         /// </summary>
         public bool calcHessian { get; private set; }
@@ -563,6 +568,7 @@ namespace ConsoleApplication1
             FitFile = "fit.fit";
             VectorName = "vector.txt";
             SeedFile = "seed.txt";
+            SeedFile2 = "";
             
 
             //these are reasonable values of J for a basic quadratic problem
@@ -843,6 +849,11 @@ namespace ConsoleApplication1
                         if (inputf[u].ToUpper() == "SEEDFILE")
                         {
                             SeedFile = inputf[u + 1];
+                            continue;
+                        }
+                        if (inputf[u].ToUpper() == "SEEDFILE2")
+                        {
+                            SeedFile2 = inputf[u + 1];
                             continue;
                         }
                         if (inputf[u] == "/")
