@@ -483,7 +483,7 @@ namespace ConsoleApplication1
             // The Lanczos routine is parallelized by j, and the routine takes the list at [j] to implement the seed vector. Empty list will indicate that no seed is being used.
             var SeedPositionsByJ = new List<int>[GenHamMat.basisPositions.Count];
             var SeedCoefficientsByJ = new List<double>[GenHamMat.basisPositions.Count];
-            var SeedPositionsByJ2 = new List<int>[GenHamMat.basisPositions.Count];
+            var SeedPositionsByJ2 = new List<int>[GenHamMat.basisPositions.Count]; // Stores second seed.
             var SeedCoefficientsByJ2 = new List<double>[GenHamMat.basisPositions.Count];
             var isAbyJ = new List<bool>[GenHamMat.basisPositions.Count]; // Array of Lists where the first index is Floor(j) and the second index are booleans indicating A1 (T) or Not A1 (F)
             for (int i = 0; i < GenHamMat.basisPositions.Count; i++)
@@ -497,17 +497,11 @@ namespace ConsoleApplication1
             if (input.useSeed)
             {
                 SeedPositionsByJ = GenerateSeedPositions(input.SeedFile, input.nModes, isQuad, ref SeedCoefficientsByJ);
-                if (input.SeedFile2 != "")
+                if (input.SeedFile2 != "") // If second seed is being used, then generate the second seed as well.
                 {
                     SeedPositionsByJ2 = GenerateSeedPositions(input.SeedFile2, input.nModes, isQuad, ref SeedCoefficientsByJ2);
                 }
             }
-            var SeedPositionsA1A2 = new List<List<int>[]>();
-            var SeedCoefficientsA1A2 = new List<List<double>[]>();
-            SeedPositionsA1A2.Add(SeedPositionsByJ);
-            SeedPositionsA1A2.Add(SeedPositionsByJ2);
-            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ);
-            SeedCoefficientsA1A2.Add(SeedCoefficientsByJ2);
             #endregion
 
             #region Lanczos
@@ -548,13 +542,15 @@ namespace ConsoleApplication1
                         ITER[i] = input.NumberOfIts;
                         evs = new double[input.M + 1];
                         temp = new double[numcolumnsA[i], input.M + 1];
-                        if (i == 1 && input.SeedFile2 != "" && isQuad) // If a1/a2 block and using second seed.
+                        // This first if conditional will calculate the a1/a2 block twice in parallel using two different seeds each run.
+                        // First, an array of a1 eigenvalues is generated into ev1. Then an array of a2 values is generated into ev2. Then ev1 is added onto ev, then ev2 is added onto the end of that and isAbyJ is labelled appropriately outside the diagonalization.
+                        if (i == 1 && input.SeedFile2 != "" && isQuad && input.useSeed) // If we're in a1/a2 block, we're using the second seed, quadratic case, and we're using any seed at all.
                         {
-                            evs1 = new double[input.M + 1];
-                            evs2 = new double[input.M + 1];
+                            evs1 = new double[input.M + 1]; // Will store a1 eigenvalues.
+                            evs2 = new double[input.M + 1]; // Will store a2 eigenvalues.
                             temp1 = new double[numcolumnsA[i], input.M + 1];
                             temp2 = new double[numcolumnsA[i], input.M + 1];
-                            Parallel.For(0, 2, seed2options, ii =>
+                            Parallel.For(0, 2, seed2options, ii => // We need to calculate the eigenvalues two times. Once with the a1 seed and once with the a2 seed. Do this in parallel. 
                             {
                                 if (ii == 0)
                                 {
@@ -566,17 +562,17 @@ namespace ConsoleApplication1
                                 }
                             }
                             );
-                            evs = new double[evs1.Length + evs2.Length];
+                            isAbyJ[i].Clear(); // These are wrong, the a2 eigenvalues are listed as true. We'll deal with this outside of the Lanczos routine, so just clear this for now.
+                            evs = new double[evs1.Length + evs2.Length]; //Add a1 and a2 separately into the eigenvalue list for j = 1.5
                             for (int iii = 0; iii < evs1.Length; iii++)
                             {
-                                evs[iii] = evs1[iii];
+                                evs[iii] = evs1[iii]; // First are a1
                             }
                             for (int iii = evs1.Length; iii < evs1.Length + evs2.Length; iii++)
                             {
-                                evs[iii] = evs2[iii - evs1.Length];
+                                evs[iii] = evs2[iii - evs1.Length]; // Then a2 are added onto the tail.
                             }
-                            isAbyJ[i].Clear();
-                        }
+                        } // end if using second seed.
                         else
                         {
                             Lanczos.NaiveLanczos(ref evs, ref temp, ref isAbyJ[i], array1[i], input.NumberOfIts, input.Tolerance, input.PrintVector, SeedPositionsByJ[i], SeedCoefficientsByJ[i], i, input.FilePath, false);
@@ -592,19 +588,19 @@ namespace ConsoleApplication1
 
                     //initialize eigenvalues to have a length.                    
                     eigenvalues[i] = new double[evs.Length - 1];
-                    if (i == 1 && input.SeedFile2 != "" && isQuad)
+                    if (i == 1 && input.SeedFile2 != "" && isQuad && input.useSeed) // If using second seed.
                     {
                         for (int j = 0; j < input.M + 1; j++) // j < evs1.Length
                         {
                             eigenvalues[i][j] = evs[j];
                             isAbyJ[i].Add(true); // These are evs1, the a1 eigenvalues.
                         }
-                        for (int j = input.M + 1; j < 2 * input.M + 1; j++)
+                        for (int j = input.M + 1; j < 2 * input.M + 1; j++) // j < evs1.Length + evs2.Length - 1
                         {
                             eigenvalues[i][j] = evs[j];
                             isAbyJ[i].Add(false); // These are evs2, the a2 eigenvalues.
                         }
-                    }
+                    } // end if using second seed.
                     else
                     {
                         for (int j = 0; j < evs.Length - 1; j++)

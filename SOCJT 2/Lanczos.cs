@@ -787,7 +787,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// /// <param name="useTwoSeeds">
         /// Indicates if two seeds are being used. If two are being used, then zero overlap vectors are thrown out.
         /// </param>
-        public static void NaiveLanczos(ref double[] evs, ref double[,] z, ref List<bool> isAList, alglib.sparsematrix A, int its, double tol, bool evsNeeded, List<int> SeedVectorPositions, List<double> SeedVectorCoefficients, int n, string file)
+        public static void NaiveLanczos(ref double[] evs, ref double[,] z, ref List<bool> isAList, alglib.sparsematrix A, int its, double tol, bool evsNeeded, List<int> SeedVectorPositions, List<double> SeedVectorCoefficients, int n, string file, bool useTwoSeeds)
         {
             int N = A.innerobj.m;
             int M = evs.Length;
@@ -839,7 +839,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                 tBetas[i] = betas[i + 2];
             }
             //Diagonalize Lanczos Matrix to find M correct eigenvalues
-            LanczosMatrixDiagonalization(ref evs, ref z, ref isAList, tol, M, alphas, nBetas, tAlphas, tBetas, evsNeeded, useSeed);
+            LanczosMatrixDiagonalization(ref evs, ref z, ref isAList, tol, M, alphas, nBetas, tAlphas, tBetas, evsNeeded, useSeed, useTwoSeeds);
             //if needed, build array of eigenvectors to return
             if (evsNeeded)
             {
@@ -909,7 +909,13 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="correctEvs">
         /// Tuple to store the positions of the correct eigenvalues so that the correct eigenvectors may be extracted.
         /// </param>
-        private static void LanczosMatrixDiagonalization(ref double[] evs, ref double[,] z, ref List<bool> isAList, double tol, int M, double[] alphas, double[] nBetas, double[] tAlphas, double[] tBetas, bool evsNeeded, bool useSeed)
+        /// /// <param name="useSeed">
+        /// Bool indicating that a seed vector is used and the dot product should be checked.
+        /// </param>
+        /// /// <param name="useTwoSeeds">
+        /// Bool indicating that two seed vectors are being used and eigenvalues failing the dot product check should be discarded.
+        /// </param>
+        private static void LanczosMatrixDiagonalization(ref double[] evs, ref double[,] z, ref List<bool> isAList, double tol, int M, double[] alphas, double[] nBetas, double[] tAlphas, double[] tBetas, bool evsNeeded, bool useSeed, bool useTwoSeeds)
         {
             //dummy matrix for diagonalization of T^2
             var ZZ = new double[0, 0];
@@ -997,8 +1003,11 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                                 }
                                 else
                                 {
-                                    correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
-                                    isAList.Add(false); // a2
+                                    if (!useTwoSeeds) // If we're not calculating a1 and a2 separately, then we need to keep this eigenvalue and call it a2. Otherwise discard.
+                                    {
+                                        correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                        isAList.Add(false); // a2
+                                    }
                                 }
                             }
                             else
@@ -1018,19 +1027,22 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
                             {
                                 correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
                                 //i += repeater - 1;
-                                isAList.Add(true);
+                                isAList.Add(true); // a1
                             }
-                            else // Remove this else if you want to remove a2 eigenvalues completely
+                            else
                             {
-                                correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
-                                isAList.Add(false);
+                                if (!useTwoSeeds) // If we're not calculating a1 and a2 separately, then we need to keep this eigenvalue and call it a2. Otherwise discard.
+                                {
+                                    correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
+                                    isAList.Add(false); // a2
+                                }
                             }
                         }
                         else
                         {
                             correctEvs.Add(new Tuple<int, double>(i, alphas[i]));
                             //i += repeater - 1;
-                            isAList.Add(false); // I think this would mean e block, so the label should be F.
+                            isAList.Add(false); // I think this would mean e block, so the label should be false.
                         }
                         i += repeater - 1;
                     }

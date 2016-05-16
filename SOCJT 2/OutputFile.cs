@@ -304,6 +304,10 @@ namespace ConsoleApplication1
             file.AppendLine("PARJ = " + Convert.ToString(input.ParJ));
             file.AppendLine("SEED = " + Convert.ToString(input.useSeed));
             file.AppendLine("SEEDFILE = " + Convert.ToString(input.SeedFile));
+            if (input.SeedFile2 != "")
+            {
+                file.AppendLine("SEEDFILE2 = " + Convert.ToString(input.SeedFile2));
+            }
             file.AppendLine("/");
             file.AppendLine("  ");
 
