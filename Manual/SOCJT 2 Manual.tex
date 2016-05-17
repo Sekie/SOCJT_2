@@ -742,7 +742,7 @@ in the test to remove duplicate and spurious eigenvalues. Any eigenvalue within 
 is removed as a duplicate and this is the same test used to remove spurious values. A value
 of 10$^{-6}$ works for most cases but it may be necessary to use a smaller value. This test may cause eigenvalues which are degenerate within {\tt TOL} with another eigenvalue of the same symmetry to be wrongly discarded. This is unfortunately unavoidable since we are using the Cullum test to remove spurious eigenvalues.
 
-An option to specify the starting, or seed, vector is included and \texttt{SEEDFILE} contains the path to the seed vector file. For more information on the format of the seed file, refer to Section \ref{seedformat}.
+An option to specify the starting, or seed, vector is included and \texttt{SEEDFILE} contains the path to the seed vector file. \texttt{SEEDFILE} must point to a vector of $a_1$ symmetry. A second seed vector file can be specified in \texttt{SEEDFILE2}, which must point to a vector of $a_2$ symmetry. For more information on the format of the seed file, refer to Section \ref{seedformat}.
 
 Defaults are
 
@@ -758,6 +758,7 @@ Defaults are
   BLOCK_LANCZOS = F
   SEED = F
   SEEDFILE = seed.txt
+  SEEDFILE2 = a2seed.txt
   /
 \end{verbatim}
 
@@ -804,7 +805,9 @@ Defaults are
   
 \item[SEED] Boolean value to indicate if a specified seed vector should be used. Boolean.
 
-\item[SEEDFILE] The name of the file containing the positions of nonzero coefficients in the seed vector and those coefficients. String.
+\item[SEEDFILE] The name of the file containing the positions of nonzero coefficients in the seed vector and those coefficients. This must be an $a_1$ seed vector. String.
+
+\item[SEEDFILE2] The name of the file containing the positions of nonzero coefficients in the second seed vector and those coefficients. This must be an $a_2$ seed vector. Do not include this line if a second seed is not intended to be used. String.
 
 \end{description}
 
@@ -1397,13 +1400,13 @@ In the case of no quadratic coupling, the symmetry of eigenvalues can be determi
 
 The seed vector is a user specified vector that will serve as the first vector in the Lanczos Algorithm. Essentially, each vector produced from the Lanczos Algorithm is a linear combination of the Hamiltonian applied to the previous vector, the previous vector, and the second previous vector. This method utilizes the fact that the Hamiltonian is totally symmetric, and thus does not change the symmetry of a vector it is applied to. Therefore, if we start with a seed vector with a certain symmetry, all proceeding vectors will have the same symmetry. Our Krylov Space will only have vectors of the same symmetry as the seed vector and thus our final eigenvectors will only be of that symmetry.
 
-This is mathematically exact, but numerically there is round off error and all eigenvalues will be obtained. However, if an eigenvector has a different symmetry than the seed vector, then it will have zero overlap with the seed vector in the exact case. For the numerical case, SOCJT 2 checks the dot product of each eigenvector with the seed vector, and throws away the corresponding eigenvalues with lower than $10^{-10}$ overlap. This is efficient because SOCJT 2 already computes the eigenvectors in the Lanczos basis, which only requires NOITS $*$ NOITS storage.
+This is mathematically exact, but numerically there is round off error and all eigenvalues will be obtained. However, if an eigenvector has a different symmetry than the seed vector, then it will have zero overlap with the seed vector in the exact case. For the numerical case using only one seed vector of $a_1$ symmetry, SOCJT 2 checks the dot product of each eigenvector with the seed vector. If the dot product is greater than $10^{-12}$, the corresponding eigenvalue is labeled $a_1$. If the dot product is less than $10^{-12}$, the eigenvalue is labeled as $a_2$. If two seed vectors are used, one of $a_1$ symmetry and one of $a_2$ symmetry, then the dot product of all eigenvectors with each seed vector is calculated. Those with an overlap of over $10^{-12}$ with the $a_1$ seed vector have their eigenvalues labeled as $a_1$ and those with an overlap of over $10^{-12}$ with the $a_2$ seed vector have their eigenvalues labeled as $a_2$. This is efficient because SOCJT 2 already computes the eigenvectors in the Lanczos basis, which only requires NOITS $*$ NOITS storage.
 
 An issue arises of ``accidental orthogonality.'' Different symmetry is not the only reason for zero overlap. For example, if a non-totally symmetric mode has an $a_1$ component and an $a_1$ seed vector does not have any vibrational quanta of a totally symmetric mode, then the combination band of the totally symmetric mode and the $a_1$ component of the non-totally symmetric mode will have zero overlap with the seed vector, even though they have the same symmetry. Therefore, some thought is required in choosing a sufficiently robust seed vector. In the example case, more components of the combination band should be added to the seed vector.
 
 \subsubsection{Format of the Seed Vector File} \label{seedformat}
 
-An additional file, named {\tt SEEDFILE}, is required if a seed vector is being specified and must be in the same directory as the input file. It contains a list of quantum numbers specifying the basis functions that have nonzero coefficients in the seed vector expansion and their relative (unnormalized) coefficient immediately following. The seed vector will be normalized in the program. 
+An additional file, named {\tt SEEDFILE}, is required if a seed vector is being specified and must be in the same directory as the input file. All eigenvalues having the same symmetry as this vector will be labeled $a_1$, so it is important that this be a vector of $a_1$ symmetry. It contains a list of quantum numbers specifying the basis functions that have nonzero coefficients in the seed vector expansion and their relative (unnormalized) coefficient immediately following. The seed vector will be normalized in the program.
 This file is of the format 
 \begin{verbatim}
 0
@@ -1435,6 +1438,8 @@ For example, this file would correspond to the seed vector
 	\frac{1}{\sqrt{2}}|0,0\rangle |0,0\rangle |1,-1\rangle |1,-1 \rangle |1\rangle
 \end{align*}
 Each basis position is separated by a / at the end. For each position, a list of integers separated by spaces or line breaks correspond to the quantum numbers of the basis function, in the order of vibrational quantum number and then vibrational angular momentum quantum number, and repeat for the next mode. The last integer is the electronic angular momentum. The order is $v_1, l_1, v_2, l_2, \ldots, \Lambda$. Therefore, there should be a list of NMODES * 2 + 1 integers. Note that nondegenerate modes do not have vibrational angular momentum, and should have an $l$ inputted as 0. \texttt{COEFFICIENT =} indicates the relative coefficient on this basis function and takes any double precision number. / ends the current basis function definition and there should be a / after every definition.
+
+It is more stable to run a calculation using two seed vectors, one for $a_1$ and one for $a_2$ eigenvalues. Hence, a second file, named \texttt{SEEDFILE2}, can be included. If only one seed vector is desired, do not include \texttt{SEEDFILE2} in the input. Otherwise, include a second seed file. All eigenvalues of the same symmetry as this seed vector will be labeled $a_2$ so it is important that this vector have $a_2$ symmetry. Note that if a second seed vector is specified, the $a_1$ and $a_2$ block will be diagonalized twice in parallel, so if \texttt{PARJ} is set to 2, the true parallelization is 3 and if \texttt{PARJ} is set to 1, the true parallelization is 2. The format of \texttt{SEEDFILE2} is the same as \texttt{SEEDFILE}.
 
 Currently, the only check that the seed vector is inputted incorrectly is triggered when the program is told to run a calculation with a seed vector with nonzero coefficient at the 0 position. This is because any impossible inputs will default to 0.
 \bibliographystyle{unsrt}

@@ -509,6 +509,9 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="SeedVectorPositions">
         /// List of positions in starting vector to be non zero for this specific j
         /// </param>
+        /// <param name="SeedCoefficients">
+        /// List of coefficients for each position in SeedVectorPositions, in the same order as SeedVectorPositions.
+        /// </param>
         private static double[] RANDOM(int N, List<int> SeedVectorPositions, List<double> SeedCoefficients)
         {
 
@@ -784,6 +787,9 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="SeedVectorPositions">
         /// List of positions in starting vector to be non zero for this specific j
         /// </param>
+        /// <param name="SeedVectorCoefficients">
+        /// List of coefficients for each position in SeedVectorPositions, in the same order as SeedVectorPositions.
+        /// </param>
         /// /// <param name="useTwoSeeds">
         /// Indicates if two seeds are being used. If two are being used, then zero overlap vectors are thrown out.
         /// </param>
@@ -885,6 +891,9 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// <param name="z">
         /// If eigenvectors are requested, will contain eigenvectors on return
         /// </param>
+        /// <param name="isAList">
+        /// Contains the symmetry of eigenvalues if a single seed is used.
+        /// </param>
         /// <param name="tol">
         /// Tolerance used for eigenvalue comparison
         /// </param>
@@ -925,7 +934,7 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
             {
                 evsRequested = its - its / 5;
             }
-            double seedtol = 1E-10; // Tolerance to reject eigenvalues. Higher means lower threshold.
+            double seedtol = 1E-12; // Tolerance to reject eigenvalues. Higher means lower threshold.
             //Tuple so that we know which eigenvectors to pull if necessary
             List<Tuple<int, double>> correctEvs = new List<Tuple<int, double>>();
             //since the vectors alphas and tAlphas are overwritten by the diagonaliztion routine but may be needed at a later point they are stored here so that if the diagonalization needs to run
@@ -1104,6 +1113,9 @@ System.Diagnostics.Stopwatch orthogTimer = new System.Diagnostics.Stopwatch();
         /// </param>
         /// <param name="SeedVectorPositions">
         /// List of positions in starting vector to be non zero for this specific j
+        /// </param>
+        /// <param name="SeedVectorValues">
+        /// List of coefficients for each position in SeedVectorPositions, in the same order as SeedVectorPositions.
         /// </param>
         private static void LanczosIterations(alglib.sparsematrix A, int its, bool evsNeeded, ref double[] alphas, ref double[] betas, ref double[,] lanczosVecs, List<int> SeedVectorPositions, List<double> SeedVectorValues, bool NTooBig, StreamWriter writer = null)
         {
